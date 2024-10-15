@@ -57,6 +57,10 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
+app.use("/",(req,res)=>{
+    res.json({message:"Hello I am from backend"})
+})
+
 // Image Upload
 app.post('/api/upload', upload.array('images', 10), async (req, res) => {
     if (!req.files || req.files.length === 0) {
