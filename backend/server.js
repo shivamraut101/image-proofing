@@ -57,9 +57,7 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-app.use("/",(req,res)=>{
-    res.json({message:"Hello I am from backend"})
-})
+
 
 // Image Upload
 app.post('/api/upload', upload.array('images', 10), async (req, res) => {
@@ -149,6 +147,10 @@ app.post('/api/user-submit', async (req, res) => {
     // Handle user-selected images (e.g., save to database or send notification)
     res.json({ message: 'Images submitted successfully' });
 });
+
+app.use("/",(req,res)=>{
+    res.json({message:"Hello I am from backend"})
+})
 
 // Start the server
 const PORT = process.env.PORT || 5000;
