@@ -14,10 +14,9 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB (Make sure to change this with your MongoDB connection string)
-mongoose.connect('YOUR_MONGODB_CONNECTION_STRING', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_CONNECTION_STRING)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 // AWS S3 Configuration
 AWS.config.update({
@@ -40,12 +39,11 @@ const adminSchema = new mongoose.Schema({
 
 const Admin = mongoose.model('Admin', adminSchema);
 
-// User Submitted Images Schema
-const imageSchema = new mongoose.Schema({
-    url: String,
+// MongoDB model (schema for storing image URLs)
+const ImageSchema = new mongoose.Schema({
+    imageUrl: String,
 });
-
-const UserImage = mongoose.model('UserImage', imageSchema);
+const Image = mongoose.model('Image', ImageSchema);
 
 // Admin Login
 app.post('/api/admin/login', async (req, res) => {
@@ -60,13 +58,17 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 // Image Upload
-app.post('/api/upload', upload.array('images'), async (req, res) => {
+app.post('/api/upload', upload.array('images', 10), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+    }
+
     const promises = req.files.map(file => {
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: file.originalname,
             Body: file.buffer,
-            ACL: 'public-read',
+            // ACL: 'public-read',
         };
         return s3.upload(params).promise();
     });
@@ -76,11 +78,58 @@ app.post('/api/upload', upload.array('images'), async (req, res) => {
         const urls = data.map(file => file.Location);
 
         // Save URLs to database (optional)
-        await UserImage.insertMany(urls.map(url => ({ url })));
+        // await UserImage.insertMany(urls.map(url => ({ url })));
 
         res.status(200).json({ message: 'Images uploaded successfully', urls });
     } catch (error) {
+        console.error(error); // Log error for debugging
         res.status(500).json({ error: 'Failed to upload images' });
+    }
+});
+
+// Save image URLs to MongoDB from users
+app.post('/api/userUpload', async (req, res) => {
+    try {
+        const { imageUrls } = req.body; // Array of image URLs from the frontend
+
+        // Insert multiple image URLs into MongoDB
+        const imageDocs = imageUrls.map(url => ({ imageUrl: url }));
+        await Image.insertMany(imageDocs);
+
+        res.status(200).json({ message: 'Image URLs saved successfully' });
+    } catch (error) {
+        console.error('Error saving image URLs:', error);
+        res.status(500).json({ message: 'Error saving image URLs' });
+    }
+});
+
+// Get all images from MongoDB submitted by user
+app.get('/api/userImages', async (req, res) => {
+    try {
+        const images = await Image.find(); // Fetch all image documents
+        res.status(200).json(images); // Return images as JSON
+    } catch (error) {
+        console.error('Error fetching images:', error);
+        res.status(500).json({ message: 'Error fetching images' });
+    }
+});
+
+
+// GET endpoint to fetch images
+app.get('/api/images', async (req, res) => {
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+    };
+
+    try {
+        const data = await s3.listObjectsV2(params).promise();
+        const imageUrls = data.Contents.map(item => {
+            return `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/${item.Key}`;
+        });
+        res.status(200).json(imageUrls);
+    } catch (error) {
+        console.error('Error fetching images:', error);
+        res.status(500).json({ error: 'Failed to fetch images' });
     }
 });
 
