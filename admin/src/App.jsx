@@ -8,8 +8,9 @@ function App() {
 
     return (
         <div className="App">
-            {!isAdmin ? <AdminLogin setIsAdmin={setIsAdmin} /> : <AdminDashboard />}
-            <UserImageSelection />
+            {/* {!isAdmin ? <AdminLogin setIsAdmin={setIsAdmin} /> : <AdminDashboard />} */}
+            <AdminDashboard />
+            {/* <UserImageSelection /> */}
         </div>
     );
 }

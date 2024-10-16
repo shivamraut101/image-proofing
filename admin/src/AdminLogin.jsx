@@ -5,16 +5,16 @@ function AdminLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await axios.post('/api/admin/login', { username, password });
-            // Handle successful login
-            console.log(response.data);
-        } catch (error) {
-            console.error('Login failed', error);
-        }
-    };
+    // const handleLogin = async (e) => {
+    //     e.preventDefault();
+    //     try {
+    //         const response = await axios.post('/api/admin/login', { username, password });
+    //         // Handle successful login
+    //         console.log(response.data);
+    //     } catch (error) {
+    //         console.error('Login failed', error);
+    //     }
+    // };
 
     return (
         <form onSubmit={handleLogin} className="flex flex-col">
